@@ -10,6 +10,13 @@ using System.Text;
 
 namespace BlogPessoal.src.servicos.implementacoes
 {
+
+    /// <summary>
+    /// <para>Resumo: Classe responsavel por implementar IAutenticacao</para>
+    /// <para>Criado por: Dannyela Souza</para>
+    /// <para>Versão: 1.0</para>
+    /// <para>Data: 12/05/2022</para>
+    /// </summary>
     public class AutenticacaoServicos : IAutenticacao
     {
 
@@ -28,52 +35,79 @@ namespace BlogPessoal.src.servicos.implementacoes
         #endregion
 
         #region Métodos
-   
+
+        /// <summary>
+        /// <para>Resumo: Método responsavel por criptografar senha</para>
+        /// </summary>
+        /// <param name="senha">Senha a ser criptografada</param>
+        /// <returns>string</returns>
+
         public string CodificarSenha(string senha)
         {
             var bytes = Encoding.UTF8.GetBytes(senha);
             return Convert.ToBase64String(bytes);
         }
 
-        public void CriarUsuarioSemDuplicar(NovoUsuarioDTO dto)
-        {
-            var usuario = _repositorio.PegarUsuarioPeloEmail(dto.Email);
-            if (usuario != null) throw new Exception("Este email já está sendo utilizado");
-            dto.Senha = CodificarSenha(dto.Senha);
-            _repositorio.NovoUsuario(dto);
-        }
+        /// <summary>
+        /// <para>Resumo: Método responsavel por gerar token JWT</para>
+        /// </summary>
+        /// <param name="usuario">UsuarioModelo</param>
+        /// <returns>string</returns>
+
         public string GerarToken(UsuarioModelo usuario)
         {
             var tokenManipulador = new JwtSecurityTokenHandler();
             var chave = Encoding.ASCII.GetBytes(Configuracao["Settings:Secret"]);
-
             var tokenDescricao = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(
-                 new Claim[]
-                 {
+                    new Claim[]
+                    {
                         new Claim(ClaimTypes.Email, usuario.Email.ToString()),
                         new Claim(ClaimTypes.Role, usuario.Tipo.ToString())
-                 }),
-
+                    }),
                 Expires = DateTime.UtcNow.AddHours(2),
                 SigningCredentials = new SigningCredentials(
-                        new SymmetricSecurityKey(chave),
-                        SecurityAlgorithms.HmacSha256Signature
-            )};
-            
+                    new SymmetricSecurityKey(chave),
+                    SecurityAlgorithms.HmacSha256Signature
+                )
+            };
             var token = tokenManipulador.CreateToken(tokenDescricao);
             return tokenManipulador.WriteToken(token);
 
         }
 
-        public AutorizacaoDTO PegarAutorizacao(AutenticarDTO autenticacao)
+        /// <summary>
+        /// <para>Resumo: Método assíncrono responsavel por criar usuario sem duplicar no banco</para>
+        /// </summary>
+        /// <param name="dto">NovoUsuarioDTO</param>
+
+        public async System.Threading.Tasks.Task CriarUsuarioSemDuplicarAsync(NovoUsuarioDTO dto)
         {
-            var usuario = _repositorio.PegarUsuarioPeloEmail(autenticacao.Email);
+            var usuario = await _repositorio.PegarUsuarioPeloEmailAsync(dto.Email);
+
+            if (usuario != null) throw new Exception("Este email já está sendo utilizado");
+
+            dto.Senha = CodificarSenha(dto.Senha);
+
+            await _repositorio.NovoUsuarioAsync(dto);
+        }
+
+
+        /// <summary>
+        /// <para>Resumo: Método assíncrono responsavel devolver autorização para usuario autenticado</para>
+        /// </summary>
+        /// <param name="dto">AutenticarDTO</param>
+        /// <returns>AutorizacaoDTO</returns>
+        /// <exception cref="Exception">Usuário não encontrado</exception>
+        /// <exception cref="Exception">Senha incorreta</exception>
+        public async System.Threading.Tasks.Task<AutorizacaoDTO> PegarAutorizacaoAsync(AutenticarDTO dto)
+        {
+            var usuario = await _repositorio.PegarUsuarioPeloEmailAsync(dto.Email);
 
             if (usuario == null) throw new Exception("Usuário não encontrado");
 
-            if (usuario.Senha != CodificarSenha(autenticacao.Senha)) throw new Exception("Senha incorreta");
+            if (usuario.Senha != CodificarSenha(dto.Senha)) throw new Exception("Senha incorreta");
 
             return new AutorizacaoDTO(usuario.Id, usuario.Email, usuario.Tipo, GerarToken(usuario));
         }

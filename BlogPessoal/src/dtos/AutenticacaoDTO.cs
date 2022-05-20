@@ -2,6 +2,13 @@
 using BlogPessoal.src.utilidades;
 namespace BlogPessoal.src.dtos
 {
+
+    /// <summary>
+    /// <para>Resumo: Classe espelho para criar uma Autenticação</para>
+    /// <para>Criado por: Dannyela Souza </para>
+    /// <para>Versão: 1.0</para>
+    /// <para>Data: 13/04/2022</para>
+    /// </summary>
     public class AutenticarDTO
     {
         [Required]
@@ -14,6 +21,14 @@ namespace BlogPessoal.src.dtos
             Senha = senha;
         }
     }
+
+    /// <summary>
+    /// <para>Resumo: Classe espelho para alterar um Autenticação</para>
+    /// <para>Criado por: Dannyela Souza </para>
+    /// <para>Versão: 1.0</para>
+    /// <para>Data: 13/04/2022</para>
+    /// </summary>
+
     public class AutorizacaoDTO
     {
         public int Id { get; set; }
